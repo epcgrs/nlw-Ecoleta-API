@@ -28,16 +28,28 @@ class PointsController {
             .split(',')
             .map(item => Number(item.trim()));
 
-        const points = await knex('points')
-            .join('point_items', 'points.id', '=', 'point_items.point_id')
-            .whereIn('point_items.item_id', parsedItems)
-            .where('city', String(city))
-            .where('uf', String(uf))
-            .distinct()
+        var query = knex('points').join('point_items', 'points.id', '=', 'point_items.point_id').distinct()
             .select('points.*');
+
+        if (city) {
+            query.where('city', String(city));
+        }
+
+        if (uf) {
+            query.where('uf', String(uf));
+        }
+
+        if (items) {
+            query.whereIn('point_items.item_id', parsedItems);
+        }
+
+        query.then(function(results) {
+            return response.json(results);
+        })
+        .then(null, function(err) {
+            return response.status(400).send({ 'success':false});
+        });
     
-    
-        return response.json(points);
     }
 
     async create(request: Request, response: Response) {
