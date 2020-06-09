@@ -12,12 +12,18 @@ class PointsController {
             return response.status(400).json({message: "Point not Found!"});
         }
 
+        const serializedPoints =  {
+            ...point,
+            'image_url': `http://192.168.15.7:3333/uploads/${point.image}`
+        };
+      
+
         const items = await knex('items')
             .join('point_items', 'items.id', '=', 'point_items.item_id')
             .where('point_items.point_id', id)
             .select('items.title');
 
-        return response.json({point, items});
+        return response.json({serializedPoints, items});
     }
 
     async index(request: Request, response: Response) {
@@ -43,8 +49,18 @@ class PointsController {
             query.whereIn('point_items.item_id', parsedItems);
         }
 
+
+
         query.then(function(results) {
-            return response.json(results);
+
+            const serializedPoints = results.map(point => {
+                return {
+                    ...point,
+                    'image_url': `http://192.168.15.7:3333/uploads/${point.image}`
+                };
+            });
+
+            return response.json(serializedPoints);
         })
         .then(null, function(err) {
             return response.status(400).send({ 'success':false});
@@ -68,7 +84,7 @@ class PointsController {
         const trx = await knex.transaction();
 
         const point = {
-            image: 'https://images.unsplash.com/photo-1472851294608-062f824d29cc?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=400&q=70',
+            image: request.file.filename,
             name,
             email,
             whatsapp,
@@ -82,7 +98,10 @@ class PointsController {
 
         const point_id = insertedIds[0];
     
-        const pointItems = items.map((item_id: number) => {
+        const pointItems = items
+            .split(',')
+            .map((item: string) => Number(item.trim()))
+            .map((item_id: number) => {
             return {
                 item_id,
                 point_id,
