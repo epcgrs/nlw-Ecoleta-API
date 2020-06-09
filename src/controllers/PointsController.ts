@@ -23,7 +23,7 @@ class PointsController {
             .where('point_items.point_id', id)
             .select('items.title');
 
-        return response.json({serializedPoints, items});
+        return response.json({point: serializedPoints, items});
     }
 
     async index(request: Request, response: Response) {
